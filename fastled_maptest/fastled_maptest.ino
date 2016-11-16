@@ -18,6 +18,10 @@ int PIR2State = 0;
 int PIR3State = 0;
 int PIR4State = 0;
 
+
+boolean leftUp = false;
+int lastLeft = 0;
+
 int xSize = 10;
 int ySize = 10;
 int maxLEDList = 8;
@@ -38,6 +42,7 @@ CRGB* leds( leds_plus_safety_pixel + 1);
 
 void initArray();
 void DrawOneFrame(byte startHue8, int8_t yHueDelta8, int8_t xHueDelta8);
+void LightDefault(uint32_t ms);
 void LightLeft(uint32_t ms);
 void LightRight(uint32_t ms);
 void LightUp(uint32_t ms);
@@ -82,11 +87,11 @@ void XY( uint8_t x, uint8_t y, uint8_t nHue, boolean off = false)
         
         if(off)
         {
-        	if(ledToWrite >= 0) leds[ ledToWrite ]  = CHSV( 0,0,0);
+        	if(ledToWrite >= 0) leds[ ledToWrite ]  = CRGB( 0,0,0);
         }
         else
         {
-        	if(ledToWrite >= 0) leds[ ledToWrite ]  = CHSV( nHue, 255, 255);
+        	if(ledToWrite >= 0) leds[ ledToWrite ]  = CRGB( nHue, 255, nHue);
         	else return;
         }
       
@@ -111,23 +116,18 @@ void loop()
     // DrawOneFrame( ms / 65536, yHueDelta32 / 32768, xHueDelta32 / 32768);
     //TestColors(ms);
 
-    // ClearAll();
-    // if(PIR1State)
-    // 	LightLeft(ms);
-    // if(PIR2State)
-    // 	LightUp(ms);
-    // if(PIR3State)
-    // 	LightRight(ms);
-    // if(PIR4State)
-    // 	LightDown(ms);
+    ClearAll();
+    LightDefault(ms);
+    if(PIR1State)
+    	LightLeft(ms);
+    if(PIR2State)
+    	LightUp(ms);
+    if(PIR3State)
+    	LightRight(ms);
+    if(PIR4State)
+    	LightDown(ms);
 
-    LightLeft(ms);
-
-    if( ms < 5000 ) {
-      FastLED.setBrightness( scale8( BRIGHTNESS, (ms * 256) / 5000));
-    } else {
-      FastLED.setBrightness(BRIGHTNESS);
-    }
+    FastLED.setBrightness(255);
     FastLED.show();
 }
 
@@ -158,58 +158,83 @@ void TestColors(uint32_t ms)
 	}
 }
 
+void LightDefault(uint32_t ms)
+{
+  int pulse = 0;
+  pulse = (ms/200)%255;
+
+  if(pulse < lastLeft)
+  	leftUp = !leftUp;
+
+  lastLeft = pulse;
+
+  if(leftUp)
+  	pulse = pulse;
+  else 
+  	pulse = 255 - pulse;
+
+  for(byte y = 0; y < kMatrixHeight; y++) {
+  	for(byte x = 0; x < kMatrixWidth; x++){
+  		XY(x,y, pulse);
+  	}
+  }
+}
+
 void LightRight(uint32_t ms)
 {
-	for(byte y = 0; y < kMatrixHeight; y++) {
-  		for(byte x = 0; x < kMatrixWidth/2; x++){
-  			XY(x,y, 0);
+  int xRow = 0;
+  xRow = kMatrixWidth-(ms/100)%kMatrixWidth;
+
+  for(byte y = 0; y < kMatrixHeight; y++) {
+  	for(byte x = 0; x < kMatrixWidth; x++){
+  		if(xRow == x)
+  			XY(x,y, 0, true);
   	}
   }
 }
 
 void LightUp(uint32_t ms)
 {
-	int yRow = (ms/100)%kMatrixHeight;
+	int yRow = 0;
+	yRow = kMatrixHeight-(ms/100)%kMatrixHeight;
 
-	for(byte y = 0; y < kMatrixHeight; y++) {
-		if(y==yRow){
-  			for(byte x = 0; x < kMatrixWidth; x++){
-  				XY(x,y, 64);
-  			}
-  		}
-  		else{
-  			for(byte x = 0; x < kMatrixWidth; x++){
-  				XY(x,y,0);
-  			}
-  		}
-  	}
+	  for(byte y = 0; y < kMatrixHeight; y++) {
+	  	if(yRow == y)
+	  	{
+	  		for(byte x = 0; x < kMatrixWidth; x++){
+	  			XY(x,y, 0, true);
+	  		}
+	  	}
+	  	
+	  }
 }
 
 void LightDown(uint32_t ms)
 {
-	for(byte y = kMatrixHeight/2; y < kMatrixHeight; y++) {
-  		for(byte x = 0; x < kMatrixWidth; x++){
-  			XY(x,y, 128);
-  	}
-  }
+	int yRow = 0;
+	yRow = (ms/100)%kMatrixHeight;
+
+	  for(byte y = 0; y < kMatrixHeight; y++) {
+	  	if(yRow == y)
+	  	{
+	  		for(byte x = 0; x < kMatrixWidth; x++){
+	  			XY(x,y, 0, true);
+	  		}
+	  	}
+	  	
+	  }
 }
 
 void LightLeft(uint32_t ms)
 {
-  int xRow = (ms/100)%kMatrixWidth;
-
-  int interpolationDistance = 4;
+  
+  int xRow = 0;
+  xRow = (ms/100)%kMatrixWidth;
 
   for(byte y = 0; y < kMatrixHeight; y++) {
   	for(byte x = 0; x < kMatrixWidth; x++){
-  		if(x == xRow)
-  			XY(x,y, 192);
-  		else if(x < xRow - interpolationDistance)
-  			XY(x,y, (192 -(192-150))/(abs(x-interpolationDistance)));
-  		else if(x > xRow + interpolationDistance)
-  			XY(x,y, (192 -(192-150))/(abs(x-interpolationDistance)));
-  		else
-  			XY(x,y, 150);
+  		if(xRow == x)
+  			XY(x,y, 0, true);
   	}
   }
 }
