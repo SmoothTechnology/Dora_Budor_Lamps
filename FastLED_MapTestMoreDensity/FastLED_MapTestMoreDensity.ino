@@ -78,22 +78,15 @@ void setupPIR()
 	pinMode(PIR4Pin, INPUT);
 }
 
-void XY( uint8_t x, uint8_t y, uint8_t nHue, boolean off = false)
+void XY( uint8_t x, uint8_t y, uint8_t nHue, uint8_t degreeOfGreen = 255)
 { 
       int ledToWrite;
       for(int i = 0; i < maxLEDList; i++){
         
         ledToWrite = LEDMap[x][y][i];
-        
-        if(off)
-        {
-        	if(ledToWrite >= 0) leds[ ledToWrite ]  = CRGB( 0,0,0);
-        }
-        else
-        {
-        	if(ledToWrite >= 0) leds[ ledToWrite ]  = CRGB( nHue, 255, nHue);
-        	else return;
-        }
+
+      	if(ledToWrite >= 0) leds[ ledToWrite ]  = CRGB( nHue, degreeOfGreen, nHue);
+      	else return;
       
       }
       
@@ -136,7 +129,7 @@ void ClearAll()
   
 	for(byte y = 0; y < kMatrixHeight; y++) {
   		for(byte x = 0; x < kMatrixWidth; x++){
-  			XY(x,y, 0, true);
+  			XY(x,y, 0, 0);
   	}
   }
 }
