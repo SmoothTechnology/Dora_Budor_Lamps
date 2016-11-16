@@ -161,7 +161,7 @@ void TestColors(uint32_t ms)
 void LightDefault(uint32_t ms)
 {
   int pulse = 0;
-  pulse = (ms/200)%255;
+  pulse = (ms/50)%255;
 
   if(pulse < lastLeft)
   	leftUp = !leftUp;
