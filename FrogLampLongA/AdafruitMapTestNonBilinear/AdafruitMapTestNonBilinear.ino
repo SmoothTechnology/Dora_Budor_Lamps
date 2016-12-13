@@ -5,7 +5,7 @@
 #include "MatrixDraw.h"
 //#include "MatrixMapping.h"
 
-#define DEBUG
+//#define DEBUG
 #define LED_PIN  11
 
 #define COLOR_ORDER GRB
@@ -35,10 +35,10 @@ int PIR3State = 0;
 int lastPIR4State = 0;
 int PIR4State = 0;
 
-long PIR1StartTime = 0;
-long PIR2StartTime = 0;
-long PIR3StartTime = 0;
-long PIR4StartTime = 0;
+long PIR1StartTime = -200000;
+long PIR2StartTime = -200000;
+long PIR3StartTime = -200000;
+long PIR4StartTime = -200000;
 
 float PIR1Val = 0;
 float PIR2Val = 0;
@@ -215,17 +215,25 @@ void XY( uint8_t x, uint8_t y, uint8_t nHue, uint8_t degreeOfGreen = 255)
         
         ledToWrite = LEDMap[x][y][i];
 
-        int redDefault = 100;
-        int greenDefault = 140;
-        int blueDefault = 51;
+        // int redDefault = 140;
+        // int greenDefault = 112;
+        // int blueDefault = 47;
+
+        int redDefault = 255;
+        int greenDefault = 204;
+        int blueDefault = 90;
 
         redDefault = degreeOfGreen/255.0 * redDefault;
         greenDefault = degreeOfGreen/255.0 * greenDefault;
         blueDefault = degreeOfGreen/255.0 * blueDefault;
 
+        #ifdef RGBW
+        if(ledToWrite >= 0) pixels.setPixelColor(ledToWrite, pixels.Color(greenDefault, redDefault, blueDefault));
+        #else
         if(ledToWrite >= 0) pixels.setPixelColor(ledToWrite, pixels.Color(redDefault, greenDefault, blueDefault));
       	//if(ledToWrite >= 0) leds[ ledToWrite ]  = CRGB( nHue, degreeOfGreen, nHue);
-      	else return;
+      	#endif
+        else return;
       
       }
       
@@ -263,12 +271,58 @@ void DrawMatrix()
     }
   }
 }
+//////////////////////////////////////////////////
+///// BEGIN ANIMATION 1 /////////////////////////
 
 
+// Demo that USES "XY" follows code below
 #define STATE1TIME 0
-#define STATE2TIME STATE1TIME + 10000
-#define MAX_TIME STATE2TIME + 8000
+#define STATE2TIME STATE1TIME + 600   
+#define STATE3TIME STATE2TIME + 500   
+#define STATE4TIME STATE3TIME + 500   
+#define STATE5TIME STATE4TIME + 600   
+#define STATE6TIME STATE5TIME + 400  
+#define STATE7TIME STATE6TIME + 500   
+#define STATE8TIME STATE7TIME + 550   
+#define STATE9TIME STATE8TIME + 650   
+#define STATE10TIME STATE9TIME + 600  
+#define STATE11TIME STATE10TIME + 600 
+#define STATE12TIME STATE11TIME + 600 
+#define STATE13TIME STATE12TIME + 600 
+#define STATE14TIME STATE13TIME + 600  //Begin stand Still
+#define STATE15TIME STATE14TIME + 600  //BEGIN Pulse
+#define STATE16TIME STATE15TIME + 600 
+#define STATE17TIME STATE16TIME + 600 
+#define STATE18TIME STATE17TIME + 600 
+#define STATE19TIME STATE18TIME + 600   //Light state to fade
+#define MAX_TIME STATE19TIME + 600   
 
+#define SPECIAL_VALUE_TIME 4000
+
+#define MAXQONE 0.3
+#define MAXQTWO 1.0
+
+long lastMillis = 0;
+long SpecialTriggered = -200000;
+
+float GetPulseSpeed(int beginTime, int endTime, float maxQ, float minQ)
+{
+  float factor = millis() - lastMillis;
+  float pulseTime = endTime - beginTime;
+  return factor*((maxQ-minQ) / pulseTime);
+}
+
+float GetSpecialPIRValue(float PIRVal, int dir)
+{
+  PIRVal -= GetPulseSpeed(0, 1000, MAXQTWO, 0);;
+
+  if(PIRVal > 1.0)
+    PIRVal = 1.0;
+  else if(PIRVal < 0.0)
+    PIRVal = 0.0;
+
+  return PIRVal;
+}
 
 // Contains Animation Information
 float GetPIRValue(long PIRTime, float PIRVal, int dir)
@@ -279,24 +333,105 @@ float GetPIRValue(long PIRTime, float PIRVal, int dir)
     if(PIRVal < 0)
       PIRVal = 0.0;
   }
-  else if(millis()-PIRTime > STATE1TIME)
+  else if(millis() - PIRTime > STATE19TIME)
   {
-    long timeBase = millis()-PIRTime;
-    PIRVal = sin(timeBase);
-
-    float shapePos = 0.0;
-
-    if(dir)
-    {
-      shapePos = (float)timeBase / (float)MAX_TIME;
-    }
-    else
-    {
-      shapePos = 1.0 - (float)timeBase / (float)MAX_TIME;
-    }
-
-    DrawShape(shapePos, abs(PIRVal), 1.0, abs(PIRVal));
+    PIRVal += GetPulseSpeed(STATE19TIME, MAX_TIME, MAXQTWO, 0);;
   }
+  else if(millis() - PIRTime > STATE18TIME)
+  {
+    PIRVal -= GetPulseSpeed(STATE18TIME, STATE19TIME, MAXQTWO, 0);
+  }
+  else if(millis() - PIRTime > STATE17TIME)
+  {
+    PIRVal += GetPulseSpeed(STATE17TIME, STATE18TIME, MAXQTWO, 0);
+  }
+  else if(millis() - PIRTime > STATE16TIME)
+  {
+    PIRVal -= GetPulseSpeed(STATE16TIME, STATE17TIME, MAXQTWO, 0);
+  }
+  else if(millis() - PIRTime > STATE15TIME)
+  {
+    PIRVal += GetPulseSpeed(STATE15TIME, STATE16TIME, MAXQTWO, 0);
+  }
+  else if(millis() - PIRTime > STATE14TIME)
+  {
+    PIRVal -= GetPulseSpeed(STATE12TIME, STATE13TIME, MAXQTWO, 0);
+  }
+  else if(millis() - PIRTime > STATE13TIME)
+  {
+    PIRVal += GetPulseSpeed(STATE13TIME, STATE14TIME, MAXQTWO, 0);
+  }
+  else if(millis() - PIRTime > STATE12TIME)
+  {
+    PIRVal -= GetPulseSpeed(STATE12TIME, STATE13TIME, MAXQTWO, 0);
+  }
+  else if(millis() - PIRTime > STATE11TIME)
+  {
+    PIRVal += GetPulseSpeed(STATE11TIME, STATE12TIME, MAXQTWO, 0);
+  }
+  else if(millis() - PIRTime > STATE10TIME)
+  {
+    PIRVal -= GetPulseSpeed(STATE10TIME, STATE11TIME, MAXQTWO, 0);
+  }
+  else if(millis() - PIRTime > STATE9TIME)
+  {
+    PIRVal += GetPulseSpeed(STATE9TIME, STATE10TIME, MAXQTWO, 0);
+  }
+  else if(millis() - PIRTime > STATE8TIME)
+  {
+    PIRVal -= GetPulseSpeed(STATE8TIME, STATE9TIME, MAXQTWO, 0);
+  }
+  else if(millis() - PIRTime > STATE7TIME)
+  {
+    PIRVal += GetPulseSpeed(STATE7TIME, STATE8TIME, MAXQTWO, 0);
+  }
+  else if(millis() - PIRTime > STATE6TIME)
+  {
+    PIRVal -= GetPulseSpeed(STATE6TIME, STATE7TIME, MAXQTWO, 0);
+  }
+  else if(millis() - PIRTime > STATE5TIME)
+  {
+    PIRVal += GetPulseSpeed(STATE5TIME, STATE6TIME, MAXQTWO, 0);
+  }
+  else if(millis() - PIRTime > STATE4TIME)
+  {
+    PIRVal -= GetPulseSpeed(STATE4TIME, STATE5TIME, MAXQTWO, 0);
+  }
+  else if(millis() - PIRTime > STATE3TIME)
+  {
+    // Pulse Up
+    PIRVal += GetPulseSpeed(STATE3TIME, STATE4TIME, MAXQTWO, 0);
+  }
+  else if(millis() - PIRTime > STATE2TIME)
+  {
+    // Pulse Down
+    PIRVal -= GetPulseSpeed(STATE2TIME, STATE3TIME, MAXQTWO, 0);
+  }
+  else if(millis() - PIRTime > STATE1TIME)
+  {
+    // Pulse Up
+    PIRVal += GetPulseSpeed(STATE1TIME, STATE2TIME, MAXQTWO, 0);
+  }
+  
+  if(PIRVal < 0)
+    PIRVal = 0;
+  else if(PIRVal > MAXQTWO)
+    PIRVal = MAXQTWO;
+
+  float curPos = 0.0;
+
+  if(millis() - PIRTime < MAX_TIME )
+  {
+
+    if(direction)
+      curPos = 1.0 - (PIRVal/MAXQTWO)/2.0;
+    else
+      curPos = (PIRVal/MAXQTWO)/2.0;
+
+
+    DrawShape(curPos, 1.0, 1.0, PIRVal);
+  }
+
   return PIRVal;
 }
 
@@ -304,30 +439,77 @@ float GetPIRValue(long PIRTime, float PIRVal, int dir)
 // The state machien described in the function above.
 void DrawShapeSensor()
 {
-  PIR1Val = GetPIRValue(PIR1StartTime, PIR1Val, 1);
-  PIR2Val = GetPIRValue(PIR2StartTime, PIR2Val, 1);
-  PIR3Val = GetPIRValue(PIR3StartTime, PIR3Val, 0);
-  PIR4Val = GetPIRValue(PIR4StartTime, PIR4Val, 0);
+
+
+  int curPIRTriggered = 0;
+  if(millis() - PIR1StartTime < MAX_TIME)
+    curPIRTriggered++;
+  if(millis() - PIR2StartTime < MAX_TIME)
+    curPIRTriggered++;
+  if(millis() - PIR3StartTime < MAX_TIME)
+    curPIRTriggered++;
+  if(millis() - PIR4StartTime < MAX_TIME)
+    curPIRTriggered++;
+
+  if(millis() - SpecialTriggered < SPECIAL_VALUE_TIME)
+  {
+    PIR1Val = GetSpecialPIRValue(PIR1Val, 1);
+    PIR2Val = GetSpecialPIRValue(PIR2Val, 1);
+    PIR3Val = GetSpecialPIRValue(PIR3Val, 0);
+    PIR4Val = GetSpecialPIRValue(PIR4Val, 0);
+
+    DrawShape(PIR1Val/2, 1.0, 1.0, PIR1Val);
+    DrawShape(1.0 - (PIR1Val/2), 1.0, 1.0, PIR1Val);
+
+    Serial.print(1.0 - (PIR1Val/2));
+    Serial.print(" ");
+    Serial.println(PIR1Val/2);
+  }
+  else
+  {
+    PIR1Val = GetPIRValue(PIR1StartTime, PIR1Val, 1);
+    PIR2Val = GetPIRValue(PIR2StartTime, PIR2Val, 1);
+    PIR3Val = GetPIRValue(PIR3StartTime, PIR3Val, 0);
+    PIR4Val = GetPIRValue(PIR4StartTime, PIR4Val, 0);
+
+  }
+
+  float cumPIRVal = PIR1Val + PIR2Val + PIR3Val + PIR4Val;
+
+  if(curPIRTriggered >= 3 && cumPIRVal > 2.2 && ( millis()-SpecialTriggered > SPECIAL_VALUE_TIME ))
+  {
+    Serial.println("Special Triggered");
+    SpecialTriggered = millis();
+    PIR1Val = MAXQTWO;
+  }
+
+  lastMillis = millis();
 
   // curShapePos += direction*posChangeRate;
   // if(curShapePos > 1.0)
   //   curShapePos = 1.0;
   // else if(curShapePos < 0)
   //   curShapePos = 0.0;
-  // DrawShape(curShapePos, 1.0, 1.0, 0.3);
+  
+  // Serial.print("1Val: ");
+  // Serial.print(PIR1Val);
+  // Serial.print("   2Val: ");
+  // Serial.print(PIR2Val);
+  // Serial.print("   3Val: ");
+  // Serial.print(PIR3Val);
+  // Serial.print("   4Val: ");
+  // Serial.print(PIR4Val);
+  // Serial.print("   Direction,ShapePos: ");
+  // Serial.print(direction);
+  // Serial.print(",");
+  // Serial.println(curShapePos);
+}
 
-  Serial.print("1Val: ");
-  Serial.print(PIR1Val);
-  Serial.print("   2Val: ");
-  Serial.print(PIR2Val);
-  Serial.print("   3Val: ");
-  Serial.print(PIR3Val);
-  Serial.print("   4Val: ");
-  Serial.print(PIR4Val);
-  Serial.print("   Direction,ShapePos: ");
-  Serial.print(direction);
-  Serial.print(",");
-  Serial.println(curShapePos);
+void DrawSolidColor()
+{
+    //draw.DrawRectangle(0, 0, xSize-1, ySize-1, 200);
+    draw.ClearMatrix();
+    draw.Fill(xSize/2,ySize/2, 255);
 }
 
 void loop()
@@ -347,6 +529,10 @@ void loop()
     ClearAll();
     draw.ClearMatrix();
     DrawShapeSensor();
+
+    
+   // DrawSolidColor();
+
     DrawMatrix();
     pixels.show();
 }

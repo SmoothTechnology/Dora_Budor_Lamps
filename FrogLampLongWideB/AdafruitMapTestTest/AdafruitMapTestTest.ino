@@ -12,7 +12,7 @@
 
 #define DEBUG
 #define LED_PIN  11
-#define ANIM2
+#define ANIM1
 
 #define COLOR_ORDER GRB
 #define CHIPSET     WS2811
@@ -623,7 +623,7 @@ float GetPIRValue(long PIRTime, float PIRVal)
 #define STATE22TIME STATE21TIME + 600 
 #define STATE23TIME STATE22TIME + 600 
 #define STATE24TIME STATE23TIME + 3000
-#define MAX_TIME STATE24TIEM + 3000   
+#define MAX_TIME STATE24TIME + 3000   
 
 #define MAXQONE 0.3
 #define MAXQTWO 0.5
