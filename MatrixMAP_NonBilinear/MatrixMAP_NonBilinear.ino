@@ -15,6 +15,11 @@ int PIR2Pin = 16; // Up
 int PIR3Pin = 17; // Right
 int PIR4Pin = 18; // Bottom
 
+int direction = 0;
+int maxDirection = 10;
+float curShapePos = 0;
+float posChangeRate = 0.001;
+
 int lastPIR1State = 0;
 int PIR1State = 0;
 
@@ -48,7 +53,7 @@ int xSize = 38;
 int ySize = 30;
 int maxLEDList = 2;
 int LEDMap[38][30][2];
-MatrixDraw draw(xSize, ySize);
+MatrixDraw draw(xSize, ySize, 9);
 
 // Params for width and height
 const uint8_t kMatrixWidth = xSize;
@@ -77,6 +82,39 @@ void LightRightSide();
 void LightUpSide();
 void LightDownSide();
 
+void DrawShape(float centerY, float size, float spread, float brightness)
+{
+    int maxX = xSize - 1;
+    int maxY = ySize - 1;
+    int maxLength = 10;
+    int curLength = size*maxLength;
+    int yPosCenter = centerY*maxY;
+    int startY = yPosCenter - curLength/2;
+    int endY = yPosCenter + curLength/2;
+    int maxSpread = 17;
+    int filterKernel = spread*maxSpread;
+    int shapeBrightness = brightness*255;
+
+    if(filterKernel%2 == 0)
+      filterKernel++;
+    if(filterKernel > maxSpread)
+      filterKernel = maxSpread;
+
+    if(endY > maxY)
+      endY = maxY;
+    else if(endY < 0)
+      endY = 0;
+
+    if(startY < 0)
+      startY = 0;
+    else if(startY > maxY)
+      startY = maxY;
+
+    draw.DrawRectangle(0, startY, maxX, endY, shapeBrightness);
+    draw.Fill(maxX/2,yPosCenter, shapeBrightness);
+    draw.MeanFilter(9);
+}
+
 void PrintPIRStates()
 {
 	Serial.print("PIR1: ");
@@ -103,6 +141,33 @@ void ReadPIRSensors()
   PIR2State = digitalRead(PIR2Pin);
 	PIR3State = digitalRead(PIR3Pin);
 	PIR4State = digitalRead(PIR4Pin);
+
+  if(PIR1State || PIR2State)
+  {
+    direction++;
+  }
+  else if(PIR3State || PIR4State)
+  {
+    direction--;
+  }
+  else
+  {
+    if(direction > 0)
+      direction--;
+    else if(direction < 0)
+      direction++;
+    else
+      direction = 0;
+  }
+
+  if(direction > maxDirection)
+  {
+    direction = maxDirection;
+  }
+  else if(direction < -1*maxDirection)
+  {
+    direction = -1*maxDirection;
+  }
 
   long curMillis = GetPIRStartTime(PIR1State, lastPIR1State);
   if(curMillis > 0)
@@ -190,63 +255,28 @@ void DrawMatrix()
   }
 }
 
-
-
-//////////////////////////////////////////////////
-///// BEGIN ANIMATION 5 /////////////////////////
-
-
-// Demo that USES "XY" follows code below
 #define STATE1TIME 0
-#define STATE2TIME 300
-#define STATE3TIME 600
-#define STATE4TIME 900
-#define STATE5TIME 1200
-#define STATE6TIME 1500
-#define STATE7TIME 1800
-#define STATE8TIME 2100
-#define STATE9TIME 2400
-#define STATE10TIME 2700
-#define STATE11TIME 3000
-#define STATE12TIME 3300
-#define STATE13TIME 3600
-#define STATE14TIME 3900 // Begin stand Still
-#define STATE15TIME 4200 // BEGIN Pulse
-#define STATE16TIME 4500
-#define STATE17TIME 4800 
-#define STATE18TIME 13000 
-#define STATE19TIME 13500
-#define STATE20TIME 14000 // Light state to fade
-#define STATE21TIME 14500
-#define STATE22TIME 15000
-#define STATE23TIME 15500
-#define MAX_TIME 16500
+#define STATE2TIME 500
+#define STATE3TIME 1000
+#define STATE4TIME 1500
+#define STATE5TIME 2000
+#define STATE6TIME 2500
+#define STATE7TIME 3000
+#define STATE8TIME 3500
+#define STATE9TIME 4000
+#define STATE10TIME 5000
+#define STATE11TIME 5500
+#define STATE12TIME 6000
+#define STATE13TIME 6500
+#define STATE14TIME 7000
+#define STATE15TIME 7500
+#define STATE16TIME 8000
+#define STATE17TIME 8500
+#define STATE18TIME 9000
+#define STATE19TIME 9500
+#define STATE20TIME 10000
+#define MAX_TIME 18000
 
-#define CENTER1 0.2
-#define CENTER2 0.3
-#define CENTER3 0.4
-#define CENTER4 0.2
-#define CENTER5 0.3
-#define CENTER6 0.3
-#define CENTER7 0.3
-#define CENTER8 0.3
-
-#define CENTERLONG 0.35
-
-#define CENTER9 0.3
-#define CENTER10 0.3
-#define CENTER11 0.4
-
-#define MAXQ 0.5
-
-long lastMillis = 0;
-
-float GetPulseSpeed(int beginTime, int endTime, float maxQ, float minQ)
-{
-  float factor = millis() - lastMillis;
-  float pulseTime = endTime - beginTime;
-  return factor*((maxQ-minQ) / pulseTime);
-}
 
 // Contains Animation Information
 float GetPIRValue(long PIRTime, float PIRVal)
@@ -257,455 +287,28 @@ float GetPIRValue(long PIRTime, float PIRVal)
     if(PIRVal < 0)
       PIRVal = 0.0;
   }
-  else if(millis()-PIRTime > STATE23TIME)
+  else if(millis()-PIRTime > STATE1TIME)
   {
-    PIRVal = CENTER11 + 0.1*(float)random(300)/300.0;
+    PIRVal = 1.0;
   }
-  else if(millis()-PIRTime > STATE22TIME)
-  {
-    PIRVal = 0;
-  }
-  else if(millis() - PIRTime > STATE21TIME)
-  {
-    PIRVal = CENTER10 + 0.1*(float)random(300)/300.0;
-  }
-  else if(millis() - PIRTime > STATE20TIME)
-  {
-    PIRVal = 0;
-  }
-  else if(millis() - PIRTime > STATE19TIME)
-  {
-    PIRVal = CENTER9 + 0.1*(float)random(300)/300.0;
-  }
-  else if(millis() - PIRTime > STATE18TIME)
-  {
-    PIRVal = 0;
-  }
-  else if(millis() - PIRTime > STATE17TIME)
-  {
-    PIRVal  = CENTERLONG + 0.1*(float)random(300)/300.0;
-  }
-  else if(millis() - PIRTime > STATE16TIME)
-  {
-    PIRVal  = CENTER8 + 0.1*(float)random(300)/300.0;
-  }
-  else if(millis() - PIRTime > STATE15TIME)
-  {
-    PIRVal = 0;
-  }
-  else if(millis() - PIRTime > STATE14TIME)
-  {
-    PIRVal  = CENTER7 + 0.1*(float)random(300)/300.0;
-  }
-  else if(millis() - PIRTime > STATE13TIME)
-  {
-    PIRVal = 0;
-  }
-  else if(millis() - PIRTime > STATE12TIME)
-  {
-    PIRVal  = CENTER6 + 0.1*(float)random(300)/300.0;
-  }
-  else if(millis() - PIRTime > STATE11TIME)
-  {
-    PIRVal = 0;
-  }
-  else if(millis() - PIRTime > STATE10TIME)
-  {
-    PIRVal  = CENTER5 + 0.1*(float)random(300)/300.0;
-  }
-  else if(millis() - PIRTime > STATE9TIME)
-  {
-    PIRVal = 0;
-  }
-  else if(millis() - PIRTime > STATE8TIME)
-  {
-    PIRVal  = CENTER4 + 0.1*(float)random(300)/300.0;
-  }
-  else if(millis() - PIRTime > STATE7TIME)
-  {
-    PIRVal = 0;
-  }
-  else if(millis() - PIRTime > STATE6TIME)
-  {
-    PIRVal  = CENTER3 + 0.1*(float)random(300)/300.0;
-  }
-  else if(millis() - PIRTime > STATE5TIME)
-  {
-    PIRVal = 0;
-  }
-  else if(millis() - PIRTime > STATE4TIME)
-  {
-    PIRVal  = CENTER2 + 0.1*(float)random(300)/300.0;
-  }
-  else if(millis() - PIRTime > STATE3TIME)
-  {
-    // Pulse Up
-    PIRVal = 0;
-  }
-  else if(millis() - PIRTime > STATE2TIME)
-  {
-    // Pulse Down
-    PIRVal  = CENTER1 + 0.1*(float)random(300)/300.0;
-  }
-  else if(millis() - PIRTime > STATE1TIME)
-  {
-    // Pulse Up
-    PIRVal = 0;
-  }
-  
-  if(PIRVal < 0)
-    PIRVal = 0;
-  else if(PIRVal > MAXQ)
-    PIRVal = MAXQ;
-
   return PIRVal;
 }
 
-//////////////////////////////////////////////////
-///// END ANIMATION 5 /////////////////////////
-
-
-//////////////////////////////////////////////////
-///// BEGIN ANIMATION 2 /////////////////////////
-
-// #define STATE1TIME 0
-// #define STATE2TIME 1600 // END RISE UP START FLUTTER
-// #define STATE3TIME 1650 
-// #define STATE4TIME 1700
-// #define STATE5TIME 1800
-// #define STATE6TIME 1900
-// #define STATE7TIME 2100
-// #define STATE8TIME 2300
-// #define STATE9TIME 2700 // End Flutter one START PULSE 2
-// #define STATE10TIME 4100 // End PULSE 2 start flutter 2
-// #define STATE11TIME 4150 
-// #define STATE12TIME 4200
-// #define STATE13TIME 4300
-// #define STATE14TIME 4400
-// #define STATE15TIME 4600
-// #define STATE16TIME 4800
-// #define STATE17TIME 5200
-// #define STATE18TIME 5600 // End Flutter 2 Start PULSE 3
-// #define STATE19TIME 7200 // End PULSE 3 start Flutter 3
-// #define STATE20TIME 7250 
-// #define STATE21TIME 7300
-// #define STATE22TIME 7400
-// #define STATE23TIME 7500
-// #define STATE24TIME 7700
-// #define STATE25TIME 7900
-// #define STATE26TIME 8300
-// #define STATE27TIME 8700
-// #define STATE28TIME 9300 //Start the hold and tremble
-// #define STATE29TIME 24000 
-// #define MAX_TIME 28000
-// #define MAXQ 0.5
-
-// long lastMillis = 0;
-// float binaryValue = 0.3;
-// float lastPIRValue = 0;
-// float lastPIRBInary = 0;
-
-// float GetPulseSpeed(int beginTime, int endTime, float maxQ, float minQ)
-// {
-//   float factor = millis() - lastMillis;
-//   float pulseTime = endTime - beginTime;
-//   return factor*((maxQ-minQ) / pulseTime);
-// }
-
-// // Contains Animation Information
-// float GetPIRValue(long PIRTime, float PIRVal)
-// {
-//   if(millis() - PIRTime > MAX_TIME)
-//   {
-//     PIRVal -= PIRChangeValue;
-//     if(PIRVal < 0)
-//       PIRVal = 0.0;
-//   }
-//   else if(millis() - PIRTime > STATE29TIME)
-//   {
-//     PIRVal -= GetPulseSpeed(STATE29TIME, MAX_TIME, lastPIRValue, 0.2);
-//   }
-//   else if(millis() - PIRTime > STATE28TIME)
-//   {
-//     PIRVal += GetPulseSpeed(STATE28TIME, STATE29TIME, MAXQ, lastPIRBInary);
-//     long randNumber = random(300);
-//     PIRVal += ((float)randNumber/300.0)*0.1;
-
-//     lastPIRValue = PIRVal;
-//   }
-//   else if(millis() - PIRTime > STATE27TIME)
-//   {
-//     PIRVal = lastPIRValue + binaryValue;
-//     lastPIRBInary = PIRVal;
-//   }
-//   else if(millis() - PIRTime > STATE26TIME)
-//   {
-//     PIRVal = lastPIRValue - binaryValue;
-//   }
-//   else if(millis() - PIRTime > STATE25TIME)
-//   {
-//     PIRVal = lastPIRValue + binaryValue;
-//   }
-//   else if(millis() - PIRTime > STATE24TIME)
-//   {
-//     PIRVal = lastPIRValue - binaryValue;
-//   }
-//   else if(millis() - PIRTime > STATE23TIME)
-//   {
-//     PIRVal = lastPIRValue + binaryValue;
-//   }
-//   else if(millis() - PIRTime > STATE22TIME)
-//   {
-//     PIRVal = lastPIRValue - binaryValue;
-//   }
-//   else if(millis() - PIRTime > STATE21TIME)
-//   {
-//     PIRVal = lastPIRValue + binaryValue;
-//   }
-//   else if(millis() - PIRTime > STATE20TIME)
-//   {
-//     PIRVal = lastPIRValue - binaryValue;
-//   }
-//   else if(millis() - PIRTime > STATE19TIME)
-//   {
-//     PIRVal = lastPIRValue + binaryValue;
-//   }
-//   else if(millis() - PIRTime > STATE18TIME)
-//   {
-//     PIRVal += GetPulseSpeed(STATE18TIME, STATE19TIME, 0.3, 0.2);
-//     lastPIRValue = PIRVal;
-//   }
-//   else if(millis() - PIRTime > STATE17TIME)
-//   {
-//     PIRVal = lastPIRValue - binaryValue;
-//   }
-//   else if(millis() - PIRTime > STATE16TIME)
-//   {
-//     PIRVal = lastPIRValue + binaryValue;
-//   }
-//   else if(millis() - PIRTime > STATE15TIME)
-//   {
-//     PIRVal = lastPIRValue - binaryValue;
-//   }
-//   else if(millis() - PIRTime > STATE14TIME)
-//   {
-//     PIRVal = lastPIRValue + binaryValue;
-//   }
-//   else if(millis() - PIRTime > STATE13TIME)
-//   {
-//     PIRVal = lastPIRValue - binaryValue;
-//   }
-//   else if(millis() - PIRTime > STATE12TIME)
-//   {
-//     PIRVal = lastPIRValue + binaryValue;
-//   }
-//   else if(millis() - PIRTime > STATE11TIME)
-//   {
-//     PIRVal = lastPIRValue - binaryValue;
-//   }
-//   else if(millis() - PIRTime > STATE10TIME)
-//   {
-//     PIRVal = lastPIRValue + binaryValue;
-//   }
-//   else if(millis() - PIRTime > STATE9TIME)
-//   {
-//     PIRVal += GetPulseSpeed(STATE9TIME, STATE10TIME, 0.3, 0.2);
-//     lastPIRValue = PIRVal;
-//   }
-//   else if(millis() - PIRTime > STATE8TIME)
-//   {
-//     PIRVal = lastPIRValue + binaryValue;
-//   }
-//   else if(millis() - PIRTime > STATE7TIME)
-//   {
-//     PIRVal = lastPIRValue - binaryValue;
-//   }
-//   else if(millis() - PIRTime > STATE6TIME)
-//   {
-//     PIRVal = lastPIRValue + binaryValue;
-//   }
-//   else if(millis() - PIRTime > STATE5TIME)
-//   {
-//     PIRVal = lastPIRValue - binaryValue;
-//   }
-//   else if(millis() - PIRTime > STATE4TIME)
-//   {
-//     PIRVal = lastPIRValue + binaryValue;
-//   }
-//   else if(millis() - PIRTime > STATE3TIME)
-//   {
-//     PIRVal = lastPIRValue - binaryValue;
-//   }
-//   else if(millis() - PIRTime > STATE2TIME)
-//   {
-//     PIRVal = lastPIRValue + binaryValue;
-//   }
-//   else if(millis() - PIRTime > STATE1TIME)
-//   {
-//     // Pulse Up
-//     PIRVal += GetPulseSpeed(STATE1TIME, STATE2TIME, MAXQ, 0);
-//     lastPIRValue = PIRVal;
-//   }
-  
-//   if(PIRVal < 0)
-//     PIRVal = 0;
-//   else if(PIRVal > MAXQ)
-//     PIRVal = MAXQ;
-
-//   return PIRVal;
-// }
-//////////////////////////////////////////////////
-///// END ANIMATION 2 /////////////////////////
-
-
-
-//////////////////////////////////////////////////
-///// BEGIN ANIMATION 1 /////////////////////////
-
-
-// // Demo that USES "XY" follows code below
-// #define STATE1TIME 0
-// #define STATE2TIME 275
-// #define STATE3TIME 550
-// #define STATE4TIME 825
-// #define STATE5TIME 1100
-// #define STATE6TIME 1375
-// #define STATE7TIME 1650
-// #define STATE8TIME 1925
-// #define STATE9TIME 2200
-// #define STATE10TIME 2475
-// #define STATE11TIME 2750
-// #define STATE12TIME 3025
-// #define STATE13TIME 3300
-// #define STATE14TIME 3575 // Begin stand Still
-// #define STATE15TIME 8000 // BEGIN Pulse
-// #define STATE16TIME 8200 
-// #define STATE17TIME 8400 
-// #define STATE18TIME 8600
-// #define STATE19TIME 8800 // Light state to fade
-// #define MAX_TIME 13000
-
-// #define MAXQ 0.5
-
-// long lastMillis = 0;
-
-// float GetPulseSpeed(int beginTime, int endTime, float maxQ, float minQ)
-// {
-//   float factor = millis() - lastMillis;
-//   float pulseTime = endTime - beginTime;
-//   return factor*((maxQ-minQ) / pulseTime);
-// }
-
-// // Contains Animation Information
-// float GetPIRValue(long PIRTime, float PIRVal)
-// {
-//   if(millis() - PIRTime > MAX_TIME)
-//   {
-//     PIRVal -= PIRChangeValue;
-//     if(PIRVal < 0)
-//       PIRVal = 0.0;
-//   }
-//   else if(millis() - PIRTime > STATE19TIME)
-//   {
-//     PIRVal = PIRVal;
-//   }
-//   else if(millis() - PIRTime > STATE18TIME)
-//   {
-//     PIRVal += GetPulseSpeed(STATE18TIME, STATE19TIME, MAXQ, 0);
-//   }
-//   else if(millis() - PIRTime > STATE17TIME)
-//   {
-//     PIRVal -= GetPulseSpeed(STATE17TIME, STATE18TIME, MAXQ, 0);
-//   }
-//   else if(millis() - PIRTime > STATE16TIME)
-//   {
-//     PIRVal += GetPulseSpeed(STATE16TIME, STATE17TIME, MAXQ, 0);
-//   }
-//   else if(millis() - PIRTime > STATE15TIME)
-//   {
-//     PIRVal -= GetPulseSpeed(STATE15TIME, STATE16TIME, MAXQ, 0);
-//   }
-//   else if(millis() - PIRTime > STATE14TIME)
-//   {
-//     PIRVal = PIRVal;
-//   }
-//   else if(millis() - PIRTime > STATE13TIME)
-//   {
-//     PIRVal += GetPulseSpeed(STATE13TIME, STATE14TIME, MAXQ, 0);
-//   }
-//   else if(millis() - PIRTime > STATE12TIME)
-//   {
-//     PIRVal -= GetPulseSpeed(STATE12TIME, STATE13TIME, MAXQ, 0);
-//   }
-//   else if(millis() - PIRTime > STATE11TIME)
-//   {
-//     PIRVal += GetPulseSpeed(STATE11TIME, STATE10TIME, MAXQ, 0);
-//   }
-//   else if(millis() - PIRTime > STATE10TIME)
-//   {
-//     PIRVal -= GetPulseSpeed(STATE10TIME, STATE11TIME, MAXQ, 0);
-//   }
-//   else if(millis() - PIRTime > STATE9TIME)
-//   {
-//     PIRVal += GetPulseSpeed(STATE9TIME, STATE10TIME, MAXQ, 0);
-//   }
-//   else if(millis() - PIRTime > STATE8TIME)
-//   {
-//     PIRVal -= GetPulseSpeed(STATE8TIME, STATE9TIME, MAXQ, 0);
-//   }
-//   else if(millis() - PIRTime > STATE7TIME)
-//   {
-//     PIRVal += GetPulseSpeed(STATE7TIME, STATE8TIME, MAXQ, 0);
-//   }
-//   else if(millis() - PIRTime > STATE6TIME)
-//   {
-//     PIRVal -= GetPulseSpeed(STATE6TIME, STATE7TIME, MAXQ, 0);
-//   }
-//   else if(millis() - PIRTime > STATE5TIME)
-//   {
-//     PIRVal += GetPulseSpeed(STATE5TIME, STATE6TIME, MAXQ, 0);
-//   }
-//   else if(millis() - PIRTime > STATE4TIME)
-//   {
-//     PIRVal -= GetPulseSpeed(STATE4TIME, STATE5TIME, MAXQ, 0);
-//   }
-//   else if(millis() - PIRTime > STATE3TIME)
-//   {
-//     // Pulse Up
-//     PIRVal += GetPulseSpeed(STATE3TIME, STATE4TIME, MAXQ, 0);
-//   }
-//   else if(millis() - PIRTime > STATE2TIME)
-//   {
-//     // Pulse Down
-//     PIRVal -= GetPulseSpeed(STATE2TIME, STATE3TIME, MAXQ, 0);
-//   }
-//   else if(millis() - PIRTime > STATE1TIME)
-//   {
-//     // Pulse Up
-//     PIRVal += GetPulseSpeed(STATE1TIME, STATE2TIME, MAXQ, 0);
-//   }
-  
-//   if(PIRVal < 0)
-//     PIRVal = 0;
-//   else if(PIRVal > MAXQ)
-//     PIRVal = MAXQ;
-
-//   return PIRVal;
-// }
-
-//////////////////////////////////////////////////
-///// END ANIMATION 1 /////////////////////////
-
 // Can use PIR values for all lighting. They will float around based on
 // The state machien described in the function above.
-void GetBilinearValues(float &Q11, float &Q12, float &Q21, float &Q22)
+void DrawShapeSensor()
 {
   PIR1Val = GetPIRValue(PIR1StartTime, PIR1Val);
   PIR2Val = GetPIRValue(PIR2StartTime, PIR2Val);
   PIR3Val = GetPIRValue(PIR3StartTime, PIR3Val);
   PIR4Val = GetPIRValue(PIR4StartTime, PIR4Val);
 
-  lastMillis = millis();
+  curShapePos += direction*posChangeRate;
+  if(curShapePos > 1.0)
+    curShapePos = 1.0;
+  else if(curShapePos < 0)
+    curShapePos = 0.0;
+  DrawShape(curShapePos, 1.0, 1.0, 0.5);
 
   Serial.print("1Val: ");
   Serial.print(PIR1Val);
@@ -714,16 +317,11 @@ void GetBilinearValues(float &Q11, float &Q12, float &Q21, float &Q22)
   Serial.print("   3Val: ");
   Serial.print(PIR3Val);
   Serial.print("   4Val: ");
-  Serial.println(PIR4Val);
-  // Q11 - Up Right
-  // Q12 - Bottom Right
-  // Q21 - UpLeft
-  // Q22 - Bottom Left
-  //Q11 = (PIR2Val + PIR3Val) / 2;
-  Q11 = (PIR2Val + PIR3Val) / 2;
-  Q12 = (PIR3Val + PIR4Val) / 2;
-  Q21 = (PIR1Val + PIR2Val) / 2;
-  Q22 = (PIR4Val + PIR1Val) / 2;
+  Serial.print(PIR4Val);
+  Serial.print("   Direction,ShapePos: ");
+  Serial.print(direction);
+  Serial.print(",");
+  Serial.println(curShapePos);
 }
 
 void loop()
@@ -741,36 +339,9 @@ void loop()
     //TestColors(ms);
 
     ClearAll();
-    // LightDefault(ms);
-    // if(PIR1State)
-    // 	LightLeft(ms);
-    // if(PIR2State)
-    // 	LightUp(ms);
-    // if(PIR3State)
-    // 	LightRight(ms);
-    // if(PIR4State)
-    // 	LightDown(ms);
     draw.ClearMatrix();
-    //draw.DrawRectangle(0,0, xSize-2, ySize-2, 100);
-    //draw.DrawCircle((ms/100)%15, xSize/2-1, ySize/2-1, 200);
-    float Q11 = 0.0, Q12 = 0.0, Q21 = 0.0, Q22 = 0.0;
-    GetBilinearValues(Q11, Q12, Q21, Q22);
-    draw.Bilinear(0, 0, xSize, ySize, Q11, Q12, Q21, Q22);
-    //draw.Fill(xSize/2, ySize/2, (ms/30)%100);
+    DrawShapeSensor();
     DrawMatrix();
-    //SerialDrawMatrix();
-    //LightDefault(ms);
-
-   //if(PIR1State)
-   // LightLeftSide();
-   //if(PIR2State)
-   // LightUpSide();
-   //if(PIR3State)
-   // LightRightSide();
-   //if(PIR4State)
-   // LightDownSide();
-    //LightDownSide();
-    //LightUpSide();
 
     FastLED.setBrightness(255);
     FastLED.show();
