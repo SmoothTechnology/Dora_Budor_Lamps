@@ -18,19 +18,6 @@ int PIR2Pin = 3; // Right
 int PIR3Pin = 5; // Left
 int PIR4Pin = 4; // Bottom
 
-int pausePin = 14;
-
-void setupPausePin()
-{
-  pinMode(pausePin, INPUT);
-}
-
-int readPausePin()
-{
-  Serial.println(digitalRead(pausePin));
-  return digitalRead(pausePin);
-}
-
 int direction = 0;
 int maxDirection = 10;
 float curShapePos = 0;
@@ -540,12 +527,9 @@ void loop()
     //TestColors(ms);
 
     ClearAll();
+    draw.ClearMatrix();
+    DrawShapeSensor();
 
-    if(readPausePin() == 0)
-    {
-      draw.ClearMatrix();
-      DrawShapeSensor();
-    }
     
    // DrawSolidColor();
 
@@ -772,7 +756,6 @@ void setup() {
 
   setupPIR();
   initArray();
-  setupPausePin();
   
   pixels.begin(); // This initializes the NeoPixel library.
   pixels.show();

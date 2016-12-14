@@ -49,7 +49,7 @@ int PIR3State = 0;
 int lastPIR4State = 0;
 int PIR4State = 0;
 
-long PIR1StartTime = -100000;
+long PIR1StartTime = 0;
 long PIR2StartTime = -100000;
 long PIR3StartTime = -100000;
 long PIR4StartTime = -100000;
@@ -70,7 +70,7 @@ int xSize = 18;
 int ySize = 49;
 int maxLEDList = 2;
 int LEDMap[18][49][2];
-MatrixDraw draw(xSize, ySize);
+MatrixDraw draw(xSize, ySize, 9);
 
 // Params for width and height
 const uint8_t kMatrixWidth = xSize;
@@ -88,6 +88,39 @@ Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUM_LEDS, LED_PIN, NEO_RGBW + NEO_K
 #else
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUM_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
 #endif
+
+void DrawShape(float centerY, float size, float spread, float brightness)
+{
+    int maxX = xSize - 1;
+    int maxY = ySize - 1;
+    int maxLength = 10;
+    int curLength = size*maxLength;
+    int yPosCenter = centerY*maxY;
+    int startY = yPosCenter - curLength/2;
+    int endY = yPosCenter + curLength/2;
+    int maxSpread = 17;
+    int filterKernel = spread*maxSpread;
+    int shapeBrightness = brightness*255;
+
+    if(filterKernel%2 == 0)
+      filterKernel++;
+    if(filterKernel > maxSpread)
+      filterKernel = maxSpread;
+
+    if(endY > maxY)
+      endY = maxY;
+    else if(endY < 0)
+      endY = 0;
+
+    if(startY < 0)
+      startY = 0;
+    else if(startY > maxY)
+      startY = maxY;
+
+    draw.DrawRectangle(0, startY, maxX, endY, shapeBrightness);
+    draw.Fill(maxX/2,yPosCenter, shapeBrightness);
+    draw.MeanFilter(9);
+}
 
 void initArray();
 void DrawOneFrame(byte startHue8, int8_t yHueDelta8, int8_t xHueDelta8);
@@ -129,6 +162,11 @@ void ReadPIRSensors()
   PIR2State = digitalRead(PIR2Pin);
 	PIR3State = digitalRead(PIR3Pin);
 	PIR4State = digitalRead(PIR4Pin);
+
+  PIR1State = 0;
+  PIR2State = 0;
+  PIR3State = 0;
+  PIR4State = 0;
 
   long curMillis = GetPIRStartTime(PIR1State, lastPIR1State);
   if(curMillis > 0)
@@ -431,9 +469,11 @@ float GetPIRValue(long PIRTime, float PIRVal)
 #define STATE26TIME STATE25TIME + 400 
 #define STATE27TIME STATE26TIME + 400 
 #define STATE28TIME STATE27TIME + 600  //Start the hold and tremble
-#define STATE29TIME STATE28TIME + 13000  
-#define MAX_TIME STATE29TIME + 4000 
-#define MAXQ 0.5
+#define STATE29TIME STATE28TIME + 4500  
+#define MAX_TIME STATE29TIME + 1000 
+#define MAXQI 0.5
+#define MAXQ 1.0
+#define MAXQ2 0.7
 
 long lastMillis = 0;
 float binaryValue = 0.3;
@@ -458,7 +498,8 @@ float GetPIRValue(long PIRTime, float PIRVal)
   }
   else if(millis() - PIRTime > STATE29TIME)
   {
-    PIRVal -= GetPulseSpeed(STATE29TIME, MAX_TIME, lastPIRValue, 0.2);
+    PIRVal -= GetPulseSpeed(STATE29TIME, MAX_TIME, lastPIRValue, 0.0);
+    //PIRVal = 0;
   }
   else if(millis() - PIRTime > STATE28TIME)
   {
@@ -507,7 +548,7 @@ float GetPIRValue(long PIRTime, float PIRVal)
   }
   else if(millis() - PIRTime > STATE18TIME)
   {
-    PIRVal += GetPulseSpeed(STATE18TIME, STATE19TIME, 0.3, 0.2);
+    PIRVal += GetPulseSpeed(STATE18TIME, STATE19TIME, MAXQ, MAXQ2);
     lastPIRValue = PIRVal;
   }
   else if(millis() - PIRTime > STATE17TIME)
@@ -544,7 +585,7 @@ float GetPIRValue(long PIRTime, float PIRVal)
   }
   else if(millis() - PIRTime > STATE9TIME)
   {
-    PIRVal += GetPulseSpeed(STATE9TIME, STATE10TIME, 0.3, 0.2);
+    PIRVal += GetPulseSpeed(STATE9TIME, STATE10TIME, MAXQ2, MAXQI);
     lastPIRValue = PIRVal;
   }
   else if(millis() - PIRTime > STATE8TIME)
@@ -578,7 +619,7 @@ float GetPIRValue(long PIRTime, float PIRVal)
   else if(millis() - PIRTime > STATE1TIME)
   {
     // Pulse Up
-    PIRVal += GetPulseSpeed(STATE1TIME, STATE2TIME, MAXQ, 0);
+    PIRVal += GetPulseSpeed(STATE1TIME, STATE2TIME, MAXQI, 0);
     lastPIRValue = PIRVal;
   }
   
@@ -776,6 +817,7 @@ void GetBilinearValues(float &Q11, float &Q12, float &Q21, float &Q22)
     PIR3Val = GetPIRValue(PIR3StartTime, PIR3Val);
     PIR4Val = GetPIRValue(PIR4StartTime, PIR4Val);
 
+
     lastMillis = millis();
 
     Serial.print("1Val: ");
@@ -834,11 +876,63 @@ void loop()
     draw.ClearMatrix();
     //draw.DrawRectangle(0,0, xSize-2, ySize-2, 100);
 
-
-
     float Q11 = 0.0, Q12 = 0.0, Q21 = 0.0, Q22 = 0.0;
     GetBilinearValues(Q11, Q12, Q21, Q22);
     draw.Bilinear(0, 0, xSize, ySize, Q11, Q12, Q21, Q22);
+
+    if(millis() - PIR1StartTime > STATE29TIME && millis() - PIR1StartTime < MAX_TIME)
+    {
+
+      float maxTime = MAX_TIME;
+      float stateTime = STATE29TIME;
+      float move = maxTime - stateTime;
+      float curMillis = millis();
+      float getPos = curMillis - (float)PIR1StartTime - stateTime;
+      float curPos = getPos/move;
+      DrawShape(curPos, 1.0, 1.0, PIR1Val+0.2);
+
+      // Serial.print(maxTime);
+      // Serial.print(" ");
+      // Serial.print(stateTime);
+      // Serial.print(" ");
+      // Serial.print(move);
+      // Serial.print(" ");
+      // Serial.print(PIR1StartTime);
+      // Serial.print(" ");
+      // Serial.print(getPos);
+      // Serial.print(" ");
+      // Serial.println(curPos);
+    }
+    if(millis() - PIR2StartTime > STATE29TIME && millis() - PIR3StartTime < MAX_TIME)
+    {
+      float maxTime = MAX_TIME;
+      float stateTime = STATE29TIME;
+      float move = maxTime - stateTime;
+      float curMillis = millis();
+      float getPos = curMillis - (float)PIR1StartTime - stateTime;
+      float curPos = getPos/move;
+      DrawShape(curPos, 1.0, 1.0, PIR2Val+0.2);
+    }
+    if(millis() - PIR3StartTime > STATE29TIME && millis() - PIR3StartTime < MAX_TIME)
+    {
+      float maxTime = MAX_TIME;
+      float stateTime = STATE29TIME;
+      float move = maxTime - stateTime;
+      float curMillis = millis();
+      float getPos = curMillis - (float)PIR1StartTime - stateTime;
+      float curPos = getPos/move;
+      DrawShape(1.0-curPos, 1.0, 1.0, PIR3Val+0.2);
+    }
+    if(millis() - PIR3StartTime > STATE29TIME && millis() - PIR3StartTime < MAX_TIME)
+    {
+      float maxTime = MAX_TIME;
+      float stateTime = STATE29TIME;
+      float move = maxTime - stateTime;
+      float curMillis = millis();
+      float getPos = curMillis - (float)PIR1StartTime - stateTime;
+      float curPos = getPos/move;
+      DrawShape(1.0-curPos, 1.0, 1.0,PIR4Val+0.2);
+    }
 
     // draw.DrawRectangle(0,0, xSize/2, ySize/2, 255);
     // draw.Fill(xSize/4, ySize/4, 255);
