@@ -130,6 +130,11 @@ void ReadPIRSensors()
 	PIR3State = digitalRead(PIR3Pin);
 	PIR4State = digitalRead(PIR4Pin);
 
+  // PIR1State = digitalRead(PIR1Pin);
+  // PIR2State = digitalRead(PIR2Pin);
+  // PIR3State = digitalRead(PIR3Pin);
+  // PIR4State = digitalRead(PIR4Pin);
+
   long curMillis = GetPIRStartTime(PIR1State, lastPIR1State);
   if(curMillis > 0)
     PIR1StartTime = curMillis;
@@ -169,20 +174,21 @@ void XY( uint8_t x, uint8_t y, uint8_t nHue, uint8_t degreeOfGreen = 255)
         
         ledToWrite = LEDMap[x][y][i];
 
-        int redDefault = 100;
-        int greenDefault = 140;
-        int blueDefault = 51;
+        int redDefault = 30;
+        int greenDefault = 10;
+        int blueDefault = 20;
+        int whiteDefault = 100;
 
         redDefault = degreeOfGreen/255.0 * redDefault;
         greenDefault = degreeOfGreen/255.0 * greenDefault;
         blueDefault = degreeOfGreen/255.0 * blueDefault;
+        whiteDefault = degreeOfGreen/255.0 * whiteDefault;
 
         #ifdef RGBW
-        if(ledToWrite >= 0) pixels.setPixelColor(ledToWrite, pixels.Color(redDefault, greenDefault, blueDefault));
+        if(ledToWrite >= 0) pixels.setPixelColor(ledToWrite, pixels.Color(greenDefault, redDefault, blueDefault, whiteDefault));
         #else
-        if(ledToWrite >= 0) pixels.setPixelColor(ledToWrite, pixels.Color(greenDefault, greenDefault, blueDefault));
+        if(ledToWrite >= 0) pixels.setPixelColor(ledToWrite, pixels.Color(redDefault, greenDefault, blueDefault));
         #endif
-
         
       	//if(ledToWrite >= 0) leds[ ledToWrite ]  = CRGB( nHue, degreeOfGreen, nHue);
       	else return;
@@ -618,15 +624,15 @@ float GetPIRValue(long PIRTime, float PIRVal)
 #define STATE17TIME STATE16TIME + 600 
 #define STATE18TIME STATE17TIME + 600 
 #define STATE19TIME STATE18TIME + 600   //Light state to fade
-#define STATE20TIME STATE19TIME + 3200
+#define STATE20TIME STATE19TIME + 800
 #define STATE21TIME STATE20TIME + 600 
 #define STATE22TIME STATE21TIME + 600 
 #define STATE23TIME STATE22TIME + 600 
-#define STATE24TIME STATE23TIME + 3000
-#define MAX_TIME STATE24TIME + 3000   
+#define STATE24TIME STATE23TIME + 90000
+#define MAX_TIME STATE24TIME + 1500   
 
-#define MAXQONE 0.3
-#define MAXQTWO 0.5
+#define MAXQONE 0.2
+#define MAXQTWO 0.6
 
 long lastMillis = 0;
 
@@ -668,11 +674,11 @@ float GetPIRValue(long PIRTime, float PIRVal)
   }
   else if(millis() - PIRTime > STATE19TIME)
   {
-    PIRVal = PIRVal;
+    PIRVal = PIRVal+0.2*(float)random(300)/300.0;
   }
   else if(millis() - PIRTime > STATE18TIME)
   {
-    PIRVal += GetPulseSpeed(STATE18TIME, STATE19TIME, MAXQTWO, 0);
+    PIRVal += GetPulseSpeed(STATE18TIME, STATE19TIME, MAXQTWO, 0) + 0.2*(float)random(300)/300.0;
   }
   else if(millis() - PIRTime > STATE17TIME)
   {
@@ -756,6 +762,126 @@ float GetPIRValue(long PIRTime, float PIRVal)
   return PIRVal;
 }
 
+#define LOWPIRLOW 0.1
+#define LOWPIRHIGH 0.2
+float GetPIRValueLow(long PIRTime, float PIRVal)
+{
+  if(millis() - PIRTime > MAX_TIME)
+  {
+    PIRVal -= PIRChangeValue;
+    if(PIRVal < 0)
+      PIRVal = 0.0;
+  }
+  else if(millis() - PIRTime > STATE24TIME)
+  {
+    PIRVal = PIRVal;
+  }
+  else if(millis() - PIRTime > STATE23TIME)
+  {
+    PIRVal += GetPulseSpeed(STATE23TIME, STATE24TIME, LOWPIRLOW, 0);
+  }
+  else if(millis() - PIRTime > STATE22TIME)
+  {
+    PIRVal -= GetPulseSpeed(STATE22TIME, STATE23TIME, LOWPIRLOW, 0);
+  }
+  else if(millis() - PIRTime > STATE21TIME)
+  {
+    PIRVal += GetPulseSpeed(STATE21TIME, STATE22TIME, LOWPIRLOW, 0);
+  }
+  else if(millis() - PIRTime > STATE20TIME)
+  {
+    PIRVal -= GetPulseSpeed(STATE20TIME, STATE21TIME, LOWPIRHIGH, 0);
+  }
+  else if(millis() - PIRTime > STATE19TIME)
+  {
+    PIRVal = PIRVal+0.2*(float)random(300)/300.0;
+  }
+  else if(millis() - PIRTime > STATE18TIME)
+  {
+    PIRVal += GetPulseSpeed(STATE18TIME, STATE19TIME, LOWPIRHIGH, 0) + 0.2*(float)random(300)/300.0;
+  }
+  else if(millis() - PIRTime > STATE17TIME)
+  {
+    PIRVal -= GetPulseSpeed(STATE17TIME, STATE18TIME, LOWPIRHIGH, 0);
+    Serial.println("ENTER FAST");
+  }
+  else if(millis() - PIRTime > STATE16TIME)
+  {
+    PIRVal += GetPulseSpeed(STATE16TIME, STATE17TIME, LOWPIRHIGH, 0);
+  }
+  else if(millis() - PIRTime > STATE15TIME)
+  {
+    PIRVal -= GetPulseSpeed(STATE15TIME, STATE16TIME, LOWPIRHIGH, 0);
+  }
+  else if(millis() - PIRTime > STATE14TIME)
+  {
+    PIRVal += GetPulseSpeed(STATE12TIME, STATE13TIME, LOWPIRHIGH, 0);
+  }
+  else if(millis() - PIRTime > STATE13TIME)
+  {
+    PIRVal -= GetPulseSpeed(STATE13TIME, STATE14TIME, LOWPIRHIGH, 0);
+  }
+  else if(millis() - PIRTime > STATE12TIME)
+  {
+    PIRVal += GetPulseSpeed(STATE12TIME, STATE13TIME, LOWPIRHIGH, 0);
+  }
+  else if(millis() - PIRTime > STATE11TIME)
+  {
+    PIRVal -= GetPulseSpeed(STATE11TIME, STATE12TIME, LOWPIRHIGH, 0);
+  }
+  else if(millis() - PIRTime > STATE10TIME)
+  {
+    PIRVal += GetPulseSpeed(STATE10TIME, STATE11TIME, LOWPIRHIGH, 0);
+    Serial.println("IN LARGE PULSE");
+  }
+  else if(millis() - PIRTime > STATE9TIME)
+  {
+    PIRVal += GetPulseSpeed(STATE9TIME, STATE10TIME, LOWPIRLOW, 0);
+  }
+  else if(millis() - PIRTime > STATE8TIME)
+  {
+    PIRVal -= GetPulseSpeed(STATE8TIME, STATE9TIME, LOWPIRLOW, 0);
+  }
+  else if(millis() - PIRTime > STATE7TIME)
+  {
+    PIRVal += GetPulseSpeed(STATE7TIME, STATE8TIME, LOWPIRLOW, 0);
+  }
+  else if(millis() - PIRTime > STATE6TIME)
+  {
+    PIRVal -= GetPulseSpeed(STATE6TIME, STATE7TIME, LOWPIRLOW, 0);
+  }
+  else if(millis() - PIRTime > STATE5TIME)
+  {
+    PIRVal += GetPulseSpeed(STATE5TIME, STATE6TIME, LOWPIRLOW, 0);
+  }
+  else if(millis() - PIRTime > STATE4TIME)
+  {
+    PIRVal -= GetPulseSpeed(STATE4TIME, STATE5TIME, LOWPIRLOW, 0);
+  }
+  else if(millis() - PIRTime > STATE3TIME)
+  {
+    // Pulse Up
+    PIRVal += GetPulseSpeed(STATE3TIME, STATE4TIME, LOWPIRLOW, 0);
+  }
+  else if(millis() - PIRTime > STATE2TIME)
+  {
+    // Pulse Down
+    PIRVal -= GetPulseSpeed(STATE2TIME, STATE3TIME, LOWPIRLOW, 0);
+  }
+  else if(millis() - PIRTime > STATE1TIME)
+  {
+    // Pulse Up
+    PIRVal += GetPulseSpeed(STATE1TIME, STATE2TIME, LOWPIRLOW, 0);
+  }
+  
+  if(PIRVal < 0)
+    PIRVal = 0;
+  else if(PIRVal > 0.3)
+    PIRVal = 0.3;
+
+  return PIRVal;
+}
+
 //////////////////////////////////////////////////
 ///// END ANIMATION 1 /////////////////////////
 #endif
@@ -772,9 +898,9 @@ void GetBilinearValues(float &Q11, float &Q12, float &Q21, float &Q22)
   if(readPausePin() == 0)
   {
     PIR1Val = GetPIRValue(PIR1StartTime, PIR1Val);
-    PIR2Val = GetPIRValue(PIR2StartTime, PIR2Val);
+    PIR2Val = GetPIRValueLow(PIR2StartTime, PIR2Val);
     PIR3Val = GetPIRValue(PIR3StartTime, PIR3Val);
-    PIR4Val = GetPIRValue(PIR4StartTime, PIR4Val);
+    PIR4Val = GetPIRValueLow(PIR4StartTime, PIR4Val);
 
     lastMillis = millis();
 

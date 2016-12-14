@@ -80,7 +80,7 @@ const uint8_t kMatrixHeight = ySize;
 const bool    kMatrixSerpentineLayout = true;
 
 
-#define RGBW
+//#define RGBW
 #define NUM_LEDS 400
 
 #ifdef RGBW
@@ -169,9 +169,9 @@ void XY( uint8_t x, uint8_t y, uint8_t nHue, uint8_t degreeOfGreen = 255)
         
         ledToWrite = LEDMap[x][y][i];
 
-        int redDefault = 100;
-        int greenDefault = 140;
-        int blueDefault = 51;
+        int redDefault = 130;
+        int greenDefault = 70;
+        int blueDefault = 25;
 
         redDefault = degreeOfGreen/255.0 * redDefault;
         greenDefault = degreeOfGreen/255.0 * greenDefault;
@@ -265,13 +265,13 @@ void DrawMatrix()
 #define CENTER7 0.3
 #define CENTER8 0.3
 
-#define CENTERLONG 0.35
+#define CENTERLONG 0.7
 
 #define CENTER9 0.3
 #define CENTER10 0.3
-#define CENTER11 0.4
+#define CENTER11 0.8
 
-#define MAXQ 0.5
+#define MAXQ 0.7
 
 long lastMillis = 0;
 

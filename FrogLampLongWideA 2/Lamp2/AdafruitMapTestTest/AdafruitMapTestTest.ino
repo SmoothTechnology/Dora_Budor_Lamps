@@ -49,7 +49,7 @@ int PIR3State = 0;
 int lastPIR4State = 0;
 int PIR4State = 0;
 
-long PIR1StartTime = 0;
+long PIR1StartTime = -100000;
 long PIR2StartTime = -100000;
 long PIR3StartTime = -100000;
 long PIR4StartTime = -100000;
@@ -91,6 +91,11 @@ Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUM_LEDS, LED_PIN, NEO_GRB + NEO_KH
 
 void DrawShape(float centerY, float size, float spread, float brightness)
 {
+    if(brightness > 1.0)
+      brightness = 1.0;
+    else if(brightness < 0.0)
+      brightness = 0.0;
+
     int maxX = xSize - 1;
     int maxY = ySize - 1;
     int maxLength = 10;
@@ -156,32 +161,79 @@ long GetPIRStartTime(int PIRState, int lastPIRState)
   return -1;
 }
 
+#define STATE1TIME 0
+#define STATE2TIME STATE1TIME + 1600 // END RISE UP START FLUTTER
+#define STATE3TIME STATE2TIME + 50 
+#define STATE4TIME STATE3TIME + 50 
+#define STATE5TIME STATE4TIME + 100
+#define STATE6TIME STATE5TIME + 100
+#define STATE7TIME STATE6TIME + 200
+#define STATE8TIME STATE7TIME + 200
+#define STATE9TIME STATE8TIME + 400// End Flutter one START PULSE 2
+#define STATE10TIME STATE9TIME + 800  // End PULSE 2 start flutter 2
+#define STATE11TIME STATE10TIME + 50 
+#define STATE12TIME STATE11TIME + 50 
+#define STATE13TIME STATE12TIME + 100// 4300
+#define STATE14TIME STATE13TIME + 100 
+#define STATE15TIME STATE14TIME + 200 
+#define STATE16TIME STATE15TIME + 200 
+#define STATE17TIME STATE16TIME + 400 
+#define STATE18TIME STATE17TIME + 400  // End Flutter 2 Start PULSE 3
+#define STATE19TIME STATE18TIME + 600  // End PULSE 3 start Flutter 3
+#define STATE20TIME STATE19TIME + 50 
+#define STATE21TIME STATE20TIME + 50 
+#define STATE22TIME STATE21TIME + 100 
+#define STATE23TIME STATE22TIME + 100 
+#define STATE24TIME STATE23TIME + 200 
+#define STATE25TIME STATE24TIME + 200 
+#define STATE26TIME STATE25TIME + 400 
+#define STATE27TIME STATE26TIME + 400 
+#define STATE28TIME STATE27TIME + 600  //Start the hold and tremble
+#define STATE29TIME STATE28TIME + 1000  
+#define MAX_TIME STATE29TIME + 500 
+#define MAXQI 0.2
+#define MAXQ 0.5
+#define MAXQ2 0.3
+
 void ReadPIRSensors()
 {
 	PIR1State = digitalRead(PIR1Pin);
   PIR2State = digitalRead(PIR2Pin);
+
+  if(PIR1State || PIR2State)
+  {
+    PIR1State = 1;
+    PIR2State = 0;
+  }
+
 	PIR3State = digitalRead(PIR3Pin);
 	PIR4State = digitalRead(PIR4Pin);
 
-  PIR1State = 0;
-  PIR2State = 0;
-  PIR3State = 0;
-  PIR4State = 0;
+  if(PIR3State || PIR4State)
+  {
+    PIR3State = 1;
+    PIR4State = 0;
+  }
+
+  // PIR1State = 0;
+  // PIR2State = 0;
+  // PIR3State = 0;
+  // PIR4State = 0;
 
   long curMillis = GetPIRStartTime(PIR1State, lastPIR1State);
-  if(curMillis > 0)
+  if(curMillis > 0 && curMillis - PIR1StartTime > MAX_TIME)
     PIR1StartTime = curMillis;
 
   curMillis = GetPIRStartTime(PIR2State, lastPIR2State);
-  if(curMillis > 0)
+  if(curMillis > 0 && curMillis - PIR2StartTime > MAX_TIME)
     PIR2StartTime = curMillis;
 
   curMillis = GetPIRStartTime(PIR3State, lastPIR3State);
-  if(curMillis > 0)
+  if(curMillis > 0 && curMillis - PIR3StartTime > MAX_TIME)
     PIR3StartTime = curMillis;
 
   curMillis = GetPIRStartTime(PIR4State, lastPIR4State);
-  if(curMillis > 0)
+  if(curMillis > 0 && curMillis - PIR4StartTime > MAX_TIME)
     PIR4StartTime = curMillis;
 
  // PIR3StartTime = 2000;
@@ -441,42 +493,10 @@ float GetPIRValue(long PIRTime, float PIRVal)
 //////////////////////////////////////////////////
 ///// BEGIN ANIMATION 2 /////////////////////////
 
-#define STATE1TIME 0
-#define STATE2TIME STATE1TIME + 1600 // END RISE UP START FLUTTER
-#define STATE3TIME STATE2TIME + 50 
-#define STATE4TIME STATE3TIME + 50 
-#define STATE5TIME STATE4TIME + 100
-#define STATE6TIME STATE5TIME + 100
-#define STATE7TIME STATE6TIME + 200
-#define STATE8TIME STATE7TIME + 200
-#define STATE9TIME STATE8TIME + 400// End Flutter one START PULSE 2
-#define STATE10TIME STATE9TIME + 1400  // End PULSE 2 start flutter 2
-#define STATE11TIME STATE10TIME + 50 
-#define STATE12TIME STATE11TIME + 50 
-#define STATE13TIME STATE12TIME + 100// 4300
-#define STATE14TIME STATE13TIME + 100 
-#define STATE15TIME STATE14TIME + 200 
-#define STATE16TIME STATE15TIME + 200 
-#define STATE17TIME STATE16TIME + 400 
-#define STATE18TIME STATE17TIME + 400  // End Flutter 2 Start PULSE 3
-#define STATE19TIME STATE18TIME + 600  // End PULSE 3 start Flutter 3
-#define STATE20TIME STATE19TIME + 50 
-#define STATE21TIME STATE20TIME + 50 
-#define STATE22TIME STATE21TIME + 100 
-#define STATE23TIME STATE22TIME + 100 
-#define STATE24TIME STATE23TIME + 200 
-#define STATE25TIME STATE24TIME + 200 
-#define STATE26TIME STATE25TIME + 400 
-#define STATE27TIME STATE26TIME + 400 
-#define STATE28TIME STATE27TIME + 600  //Start the hold and tremble
-#define STATE29TIME STATE28TIME + 4500  
-#define MAX_TIME STATE29TIME + 1000 
-#define MAXQI 0.5
-#define MAXQ 1.0
-#define MAXQ2 0.7
+
 
 long lastMillis = 0;
-float binaryValue = 0.3;
+float binaryValue = 0.1;
 float lastPIRValue = 0;
 float lastPIRBInary = 0;
 
@@ -889,7 +909,7 @@ void loop()
       float curMillis = millis();
       float getPos = curMillis - (float)PIR1StartTime - stateTime;
       float curPos = getPos/move;
-      DrawShape(curPos, 1.0, 1.0, PIR1Val+0.2);
+      DrawShape(curPos, 1.0, 1.0, 1.0);
 
       // Serial.print(maxTime);
       // Serial.print(" ");
@@ -911,7 +931,7 @@ void loop()
       float curMillis = millis();
       float getPos = curMillis - (float)PIR1StartTime - stateTime;
       float curPos = getPos/move;
-      DrawShape(curPos, 1.0, 1.0, PIR2Val+0.2);
+      DrawShape(curPos, 1.0, 1.0, 1.0);
     }
     if(millis() - PIR3StartTime > STATE29TIME && millis() - PIR3StartTime < MAX_TIME)
     {
@@ -921,7 +941,7 @@ void loop()
       float curMillis = millis();
       float getPos = curMillis - (float)PIR1StartTime - stateTime;
       float curPos = getPos/move;
-      DrawShape(1.0-curPos, 1.0, 1.0, PIR3Val+0.2);
+      DrawShape(1.0-curPos, 1.0, 1.0, 1.0);
     }
     if(millis() - PIR3StartTime > STATE29TIME && millis() - PIR3StartTime < MAX_TIME)
     {
@@ -931,7 +951,7 @@ void loop()
       float curMillis = millis();
       float getPos = curMillis - (float)PIR1StartTime - stateTime;
       float curPos = getPos/move;
-      DrawShape(1.0-curPos, 1.0, 1.0,PIR4Val+0.2);
+      DrawShape(1.0-curPos, 1.0, 1.0, 1.0);
     }
 
     // draw.DrawRectangle(0,0, xSize/2, ySize/2, 255);
