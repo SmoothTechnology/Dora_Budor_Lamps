@@ -125,15 +125,23 @@ long GetPIRStartTime(int PIRState, int lastPIRState)
 
 void ReadPIRSensors()
 {
-	PIR1State = digitalRead(PIR1Pin);
+  PIR1State = digitalRead(PIR1Pin);
   PIR2State = digitalRead(PIR2Pin);
-	PIR3State = digitalRead(PIR3Pin);
-	PIR4State = digitalRead(PIR4Pin);
 
-  // PIR1State = digitalRead(PIR1Pin);
-  // PIR2State = digitalRead(PIR2Pin);
-  // PIR3State = digitalRead(PIR3Pin);
-  // PIR4State = digitalRead(PIR4Pin);
+  if(PIR1State || PIR2State)
+  {
+    PIR1State = 0;
+    PIR2State = 1;
+  }
+
+  PIR3State = digitalRead(PIR3Pin);
+  PIR4State = digitalRead(PIR4Pin);
+
+  if(PIR3State || PIR4State)
+  {
+    PIR3State = 0;
+    PIR4State = 1;
+  }
 
   long curMillis = GetPIRStartTime(PIR1State, lastPIR1State);
   if(curMillis > 0)
@@ -897,10 +905,10 @@ void GetBilinearValues(float &Q11, float &Q12, float &Q21, float &Q22)
   Serial.println(readPausePin());
   if(readPausePin() == 0)
   {
-    PIR1Val = GetPIRValue(PIR1StartTime, PIR1Val);
-    PIR2Val = GetPIRValueLow(PIR2StartTime, PIR2Val);
-    PIR3Val = GetPIRValue(PIR3StartTime, PIR3Val);
-    PIR4Val = GetPIRValueLow(PIR4StartTime, PIR4Val);
+    PIR1Val = 0;//GetPIRValue(PIR1StartTime, PIR1Val);
+    PIR2Val = GetPIRValue(PIR2StartTime, PIR2Val);
+    PIR3Val = 0;//GetPIRValue(PIR3StartTime, PIR3Val);
+    PIR4Val = GetPIRValue(PIR4StartTime, PIR4Val);
 
     lastMillis = millis();
 

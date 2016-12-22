@@ -259,20 +259,25 @@ void XY( uint8_t x, uint8_t y, uint8_t nHue, uint8_t degreeOfGreen = 255)
         
         ledToWrite = LEDMap[x][y][i];
 
-        int redDefault = 100;
-        int greenDefault = 140;
-        int blueDefault = 51;
+        int redDefault = 50;
+        int greenDefault = 20;
+        int blueDefault = 20;
+        int whiteDefault = 100;
 
         redDefault = degreeOfGreen/255.0 * redDefault;
         greenDefault = degreeOfGreen/255.0 * greenDefault;
         blueDefault = degreeOfGreen/255.0 * blueDefault;
+        whiteDefault = degreeOfGreen/255.0 * whiteDefault;
+
+        if(ledToWrite == 0)
+          return;
 
         #ifdef RGBW
-        if(ledToWrite >= 0) pixels.setPixelColor(ledToWrite, pixels.Color(redDefault, greenDefault, blueDefault));
+        if(ledToWrite >= 0) pixels.setPixelColor(ledToWrite, pixels.Color(greenDefault, redDefault, blueDefault, whiteDefault));
         #else
-        if(ledToWrite >= 0) pixels.setPixelColor(ledToWrite, pixels.Color(greenDefault, greenDefault, blueDefault));
+        if(ledToWrite >= 0) pixels.setPixelColor(ledToWrite, pixels.Color(redDefault, greenDefault, blueDefault));
+        //if(ledToWrite >= 0) leds[ ledToWrite ]  = CRGB( nHue, degreeOfGreen, nHue);
         #endif
-
         
       	//if(ledToWrite >= 0) leds[ ledToWrite ]  = CRGB( nHue, degreeOfGreen, nHue);
       	else return;

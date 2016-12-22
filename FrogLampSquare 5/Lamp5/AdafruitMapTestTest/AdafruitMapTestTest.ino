@@ -169,9 +169,9 @@ void XY( uint8_t x, uint8_t y, uint8_t nHue, uint8_t degreeOfGreen = 255)
         
         ledToWrite = LEDMap[x][y][i];
 
-        int redDefault = 130;
-        int greenDefault = 70;
-        int blueDefault = 25;
+        int redDefault = 105;
+        int greenDefault = 80;
+        int blueDefault = 32;
 
         redDefault = degreeOfGreen/255.0 * redDefault;
         greenDefault = degreeOfGreen/255.0 * greenDefault;
